@@ -1,12 +1,12 @@
-const { app } = require('./app')
-const ConnectDB = require('./database/DB_Connection')
-
 require('dotenv')
 .config(
     {
         path:'./.env'
     }
 )
+const { app } = require('./app')
+const ConnectDB = require('./database/DB_Connection')
+
 
 ConnectDB()
 .then(()=>{
