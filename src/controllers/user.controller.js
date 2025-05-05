@@ -20,7 +20,7 @@ const register_user = asyncHandler(async (req, res) => {
     email,
     password,
   });
-  const otp = await newUser.generatePasswordResetOTP();
+  const otp = await newUser.generateEmailVerificationOTP();
 
   const createdUser = await User.findById(newUser._id).select(
     "name email password role"
@@ -57,6 +57,16 @@ const register_user = asyncHandler(async (req, res) => {
     .json(new APIResponse(200, createdUser, "User Created Successfully"));
 });
 
+const verify_user = asyncHandler(async (req, res) => {
+    const {email,otp} = req.body
+    const existingUser = await User.findOne({email})
+
+    if(!existingUser) throw new APIError(404,"User does not exist")
+    
+    existingUser.
+});
+
 module.exports = {
   register_user,
+  verify_user,
 };
