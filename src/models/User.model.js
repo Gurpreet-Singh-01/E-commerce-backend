@@ -170,8 +170,7 @@ userSchema.methods.verifyEmailVerificationOTP = async function (otp) {
 };
 
 
-userSchema.index({ email: 1 });
-userSchema.index({ role: 1 });
+
 
 const User = model("User", userSchema);
 module.exports = User;

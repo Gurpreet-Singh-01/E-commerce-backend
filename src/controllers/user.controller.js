@@ -21,7 +21,8 @@ const register_user = asyncHandler(async (req,res) =>{
         email,
         password
     })
-    
+    const otp = await newUser.generatePasswordResetOTP()
+    console.log(otp)
     const createdUser = await User.findById(newUser._id).select(
         "name email password role"
     );
