@@ -31,12 +31,12 @@ const register_user = asyncHandler(async (req, res) => {
   const mailOptions = {
     from: process.env.NODEMAILER_USER,
     to: email,
-    subject: "Account Verification",
+    subject: "TechTrendz Account Verification",
     html: `<div style="max-width: 500px; margin: auto; padding: 20px; background: #ffffff; border: 1px solid #ddd; border-radius: 10px; font-family: Arial, sans-serif;">
       <h2 style="text-align: center; color: #333;">Email Verification</h2>
       <p style="font-size: 16px; color: #555;">
         Hello, ${name}<br/><br/>
-        Your One-Time Password (OTP) for email verification is:${otp}
+        Your One-Time Password (OTP) for email verification is:
       </p>
       <div style="font-size: 28px; font-weight: bold; color: #007BFF; text-align: center; margin: 20px 0;">
         ${otp}
@@ -51,7 +51,7 @@ const register_user = asyncHandler(async (req, res) => {
   };
 
   await transporter.sendMail(mailOptions);
-  
+
   return res
     .status(200)
     .json(new APIResponse(200, createdUser, "User Created Successfully"));
