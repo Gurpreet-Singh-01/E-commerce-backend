@@ -1,8 +1,26 @@
+const { COOKIE_OPTIONS } = require("../constants");
 const User = require("../models/user.model");
 const APIError = require("../utils/API_utilities/APIError");
 const APIResponse = require("../utils/API_utilities/APIResponse");
 const asyncHandler = require("../utils/API_utilities/asyncHandler");
 const transporter = require("../utils/services/nodemailer_config");
+
+const generateAccessTokenAndVerificationToken = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    const accessToken = await user.generateAccessToken();
+    const refreshToken = await user.generateRefreshToken();
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw new APIError(
+      500,
+      "Something went wrong while creating access and refresh token"
+    );
+  }
+};
 
 const register_user = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
@@ -22,8 +40,7 @@ const register_user = asyncHandler(async (req, res) => {
   });
   const otp = await newUser.generateEmailVerificationOTP();
 
-  const createdUser = await User.findById(newUser._id)
-  .select(
+  const createdUser = await User.findById(newUser._id).select(
     "name email password role"
   );
 
@@ -59,13 +76,28 @@ const register_user = asyncHandler(async (req, res) => {
 });
 
 const verify_user = asyncHandler(async (req, res) => {
-    const {email,otp} = req.body
-    const existingUser = await User.findOne({email})
+  const { email, otp } = req.body;
+  const existingUser = await User.findOne({ email });
 
-    if(!existingUser) throw new APIError(404,"User does not exist")
-    
-    existingUser
+  if (!existingUser) throw new APIError(404, "User does not exist");
+  const stringOtp = String(otp);
+  const isValid = await existingUser.verifyEmailVerificationOTP(stringOtp);
+  if (!isValid) throw new APIError(401, "Invalid Otp or Otp Expired");
+
+  const {accessToken,refreshToken} =await generateAccessTokenAndVerificationToken(existingUser._id)
+
+  const loggedInUser = await User.findById(existingUser._id).select(
+    "-password -refreshToken"
+  )
+  if(!loggedInUser) throw new APIError(500, "Something went wrong")
+
+  return res
+    .cookie("accessToken", accessToken, COOKIE_OPTIONS)
+    .cookie("refreshToken", refreshToken, COOKIE_OPTIONS)
+    .status(200)
+    .json(new APIResponse(200, loggedInUser, "Email Verification Successfull"));
 });
+
 
 module.exports = {
   register_user,

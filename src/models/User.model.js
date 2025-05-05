@@ -162,6 +162,7 @@ userSchema.methods.verifyEmailVerificationOTP = async function (otp) {
   }
   const isValid = await bcrypt.compare(otp, this.emailVerificationOtp);
   if (isValid) {
+    this.isVerified = true
     this.emailVerificationOtp = undefined;
     this.emailVerificationOtpExpires = undefined;
     await this.save();
