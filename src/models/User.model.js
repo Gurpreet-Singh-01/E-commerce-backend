@@ -144,7 +144,7 @@ userSchema.methods.verifyPasswordResetOTP = async function (otp) {
 };
 
 userSchema.methods.generateEmailVerificationOTP = async function () {
-  const otp = Math.floor(100000 + Math.random() * 900000);
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
   this.emailVerificationOtp = await bcrypt.hash(otp,10);
   this.emailVerificationOtpExpires = Date.now() + 1000 * 60 * 10; // 10 min
   await this.save();

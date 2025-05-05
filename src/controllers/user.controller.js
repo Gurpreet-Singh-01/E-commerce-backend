@@ -22,7 +22,8 @@ const register_user = asyncHandler(async (req, res) => {
   });
   const otp = await newUser.generateEmailVerificationOTP();
 
-  const createdUser = await User.findById(newUser._id).select(
+  const createdUser = await User.findById(newUser._id)
+  .select(
     "name email password role"
   );
 
@@ -44,7 +45,7 @@ const register_user = asyncHandler(async (req, res) => {
       <p style="font-size: 14px; color: #888;">
         This OTP is valid for the next 10 minutes. Please do not share it with anyone.
       </p>
-      <p style="font-size: 14px; color: #aaa; text-align: center; margin-top: 30px;">
+      <p style="font-size: 14px; color: #aaa; margin-top: 30px;">
         – The TechTrendz Team
       </p>
     </div>`,
@@ -63,7 +64,7 @@ const verify_user = asyncHandler(async (req, res) => {
 
     if(!existingUser) throw new APIError(404,"User does not exist")
     
-    existingUser.
+    existingUser
 });
 
 module.exports = {
