@@ -84,22 +84,65 @@ const verify_user = asyncHandler(async (req, res) => {
   const isValid = await existingUser.verifyEmailVerificationOTP(stringOtp);
   if (!isValid) throw new APIError(401, "Invalid Otp or Otp Expired");
 
-  const {accessToken,refreshToken} =await generateAccessTokenAndVerificationToken(existingUser._id)
+  const { accessToken, refreshToken } =
+    await generateAccessTokenAndVerificationToken(existingUser._id);
 
   const loggedInUser = await User.findById(existingUser._id).select(
     "-password -refreshToken"
-  )
-  if(!loggedInUser) throw new APIError(500, "Something went wrong")
+  );
+  if (!loggedInUser) throw new APIError(500, "Something went wrong");
 
   return res
     .cookie("accessToken", accessToken, COOKIE_OPTIONS)
     .cookie("refreshToken", refreshToken, COOKIE_OPTIONS)
     .status(200)
-    .json(new APIResponse(200, loggedInUser, "Email Verification Successfull"));
+    .json(
+      new APIResponse(
+        200,
+        { user: loggedInUser },
+        "Email Verification Successfull"
+      )
+    );
 });
 
+const login_user = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password)
+    throw new APIError(400, "Email or Password is required");
+  const user = await User.findOne({ email });
+  if (!user) throw new APIError(401, "User not found");
+
+  const isMatched = await user.isPasswordCorrect(password);
+  if (!isMatched) throw new APIError(401, "Invalid Credentials");
+
+  const { accessToken, refreshToken } =
+    await generateAccessTokenAndVerificationToken(user._id);
+
+  const loggedInUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
+  if (!loggedInUser) throw new APIError(500, "Something went wrong");
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, COOKIE_OPTIONS)
+    .cookie("refreshToken", refreshToken, COOKIE_OPTIONS)
+    .json(
+      new APIResponse(
+        200,
+        {
+          user: loggedInUser,
+          accessToken,
+          refreshToken,
+        },
+        "User logged in successfully"
+      )
+    );
+});
 
 module.exports = {
   register_user,
   verify_user,
+  login_user
 };

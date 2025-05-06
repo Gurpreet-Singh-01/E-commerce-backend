@@ -10,9 +10,10 @@ const verifyJWT = asyncHandler(async (req, _, next) => {
   try {
     const token =
       req.cookies?.accessToken ||
-      req.headers("Authorization")?.replace("Bearer ", "");
+      (req.headers.authorization?.startsWith("Bearer") &&
+      req.headers.authorization.split(" ")[1]);
 
-    if (!token) throw new APIError(401, "Unauthorized Access");
+    if (!token) throw new APIError(401, "No Access Token Provided");
 
     const decodedToken = await JWT.verify(
       token,
