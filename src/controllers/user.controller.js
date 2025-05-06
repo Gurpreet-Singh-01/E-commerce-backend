@@ -184,7 +184,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
   if (!email) throw new APIError(400, "Email is required");
 
-  const user = await User.findOne({ email }).select("name email role");
+  const user = await User.findOne({ email })
   if (!user) throw new APIError(404, "No user found");
 
   const otp = await user.generatePasswordResetOTP();
@@ -216,7 +216,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new APIResponse(200, user, "Password Reset Otp sent successfully"));
+    .json(new APIResponse(200, {}, "Password Reset Otp sent successfully"));
 });
 
 const passwordReset = asyncHandler(async (req, res) => {
@@ -227,11 +227,15 @@ const passwordReset = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email });
   if (!user) throw new APIError(404, "User not found");
 
-  const isValid = await user.verifyPasswordResetOTP(otp);
-  if (!isValid) throw new APIError(400, "Invalid or Expired OTP");
 
+  
   const isSame = await user.isPasswordCorrect(newPassword);
   if (isSame) throw new APIError(400, "New password cannot be same as old");
+
+  const stringOtp = String(otp)
+  const isValid = await user.verifyPasswordResetOTP(stringOtp);
+  if (!isValid) throw new APIError(400, "Invalid or Expired OTP");
+
 
   user.password = newPassword;
   user.refreshToken = undefined;
