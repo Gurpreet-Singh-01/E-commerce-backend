@@ -160,9 +160,31 @@ const logout_user = asyncHandler(async (req, res) => {
 
 });
 
+  const changeCurrentPassword = asyncHandler(async(req,res) =>{
+  const {oldPassword, newPassword} = req.body
+  if(!oldPassword || !newPassword) throw new APIError(400, "Password fields are missing")
+  
+  const user = await User.findById(req.user?._id)
+  if(!user) throw new APIError(401, "Invalid Access Token")
+  const isMatched = await user.isPasswordCorrect(oldPassword)
+  if(!isMatched) throw new APIError(401, "Incorrect Password")
+  
+  if(oldPassword.trim() === newPassword.trim()) throw new APIError(400, "New Password cannot be same.")
+
+  user.password = newPassword
+  await user.save()
+
+  return res
+  .status(200)
+  .json(new APIResponse(200, {}, "Password Changes Successfully"))
+
+})
+
 module.exports = {
   register_user,
   verify_user,
   login_user,
-  logout_user
+  logout_user,
+  changeCurrentPassword,
+
 };
