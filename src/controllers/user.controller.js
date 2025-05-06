@@ -4,8 +4,8 @@ const APIError = require("../utils/API_utilities/APIError");
 const APIResponse = require("../utils/API_utilities/APIResponse");
 const asyncHandler = require("../utils/API_utilities/asyncHandler");
 const transporter = require("../utils/services/nodemailer_config");
-
-const generateAccessTokenAndVerificationToken = async (userId) => {
+const JWT = require("jsonwebtoken");
+const generateAccessTokenAndRefreshToken = async (userId) => {
   try {
     const user = await User.findById(userId);
     const accessToken = await user.generateAccessToken();
@@ -85,7 +85,7 @@ const verify_user = asyncHandler(async (req, res) => {
   if (!isValid) throw new APIError(401, "Invalid Otp or Otp Expired");
 
   const { accessToken, refreshToken } =
-    await generateAccessTokenAndVerificationToken(existingUser._id);
+    await generateAccessTokenAndRefreshToken(existingUser._id);
 
   const loggedInUser = await User.findById(existingUser._id).select(
     "-password -refreshToken"
@@ -93,8 +93,14 @@ const verify_user = asyncHandler(async (req, res) => {
   if (!loggedInUser) throw new APIError(500, "Something went wrong");
 
   return res
-    .cookie("accessToken", accessToken, COOKIE_OPTIONS)
-    .cookie("refreshToken", refreshToken, COOKIE_OPTIONS)
+    .cookie("accessToken", accessToken, {
+      ...COOKIE_OPTIONS,
+      maxAge: 1000 * 60 * 60 * 2,
+    })
+    .cookie("refreshToken", refreshToken, {
+      ...COOKIE_OPTIONS,
+      maxAge: 1000 * 60 * 60 * 24 * 5,
+    })
     .status(200)
     .json(
       new APIResponse(
@@ -117,7 +123,7 @@ const login_user = asyncHandler(async (req, res) => {
   if (!isMatched) throw new APIError(401, "Invalid Credentials");
 
   const { accessToken, refreshToken } =
-    await generateAccessTokenAndVerificationToken(user._id);
+    await generateAccessTokenAndRefreshToken(user._id);
 
   const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken"
@@ -126,8 +132,14 @@ const login_user = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .cookie("accessToken", accessToken, COOKIE_OPTIONS)
-    .cookie("refreshToken", refreshToken, COOKIE_OPTIONS)
+    .cookie("accessToken", accessToken, {
+      ...COOKIE_OPTIONS,
+      maxAge: 1000 * 60 * 60 * 2,
+    })
+    .cookie("refreshToken", refreshToken, {
+      ...COOKIE_OPTIONS,
+      maxAge: 1000 * 60 * 60 * 24 * 5,
+    })
     .json(
       new APIResponse(
         200,
@@ -184,7 +196,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
   if (!email) throw new APIError(400, "Email is required");
 
-  const user = await User.findOne({ email })
+  const user = await User.findOne({ email });
   if (!user) throw new APIError(404, "No user found");
 
   const otp = await user.generatePasswordResetOTP();
@@ -227,15 +239,12 @@ const passwordReset = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email });
   if (!user) throw new APIError(404, "User not found");
 
-
-  
   const isSame = await user.isPasswordCorrect(newPassword);
   if (isSame) throw new APIError(400, "New password cannot be same as old");
 
-  const stringOtp = String(otp)
+  const stringOtp = String(otp);
   const isValid = await user.verifyPasswordResetOTP(stringOtp);
   if (!isValid) throw new APIError(400, "Invalid or Expired OTP");
-
 
   user.password = newPassword;
   user.refreshToken = undefined;
@@ -252,6 +261,49 @@ const passwordReset = asyncHandler(async (req, res) => {
     );
 });
 
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const incomingRefreshToken =
+    req.cookies.refreshToken || req.body.refreshToken;
+
+  if (!incomingRefreshToken) throw new APIError(401, "Unauthorized Token");
+
+  try {
+    const decodedToken = JWT.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET_KEY
+    );
+
+    if (!decodedToken) throw new APIError(401, "Unauthorized Access");
+    const user = await User.findById(decodedToken?._id);
+
+    if (!user) throw new APIError(401, "Invalid Token");
+
+    if (incomingRefreshToken !== user.refreshToken)
+      throw new APIError(400, "Refresh Token is expired or used");
+
+    const { accessToken, refreshToken: newRefreshToken } =
+      await generateAccessTokenAndRefreshToken(user._id);
+
+    user.refreshToken = newRefreshToken;
+
+    await user.save({ validateBeforeSave: false });
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, {
+        ...COOKIE_OPTIONS,
+        maxAge: 1000 * 60 * 60 * 2,
+      })
+      .cookie("refreshToken", newRefreshToken, {
+        ...COOKIE_OPTIONS,
+        maxAge: 1000 * 60 * 60 * 24 * 5,
+      })
+      .json(new APIResponse(200, {}, "Tokens generated successfully"));
+  } catch (error) {
+    throw new APIError(401, error?.message || "Invalid Refresh Token");
+  }
+});
+
 module.exports = {
   register_user,
   verify_user,
@@ -260,4 +312,5 @@ module.exports = {
   changeCurrentPassword,
   forgotPassword,
   passwordReset,
+  refreshAccessToken,
 };
