@@ -153,32 +153,97 @@ const logout_user = asyncHandler(async (req, res) => {
   );
 
   return res
-  .status(200)
-  .clearCookie("accessToken")
-  .clearCookie("refreshToken")
-  .json(new APIResponse(200, {} ,"User logged out successfully"))
-
+    .status(200)
+    .clearCookie("accessToken")
+    .clearCookie("refreshToken")
+    .json(new APIResponse(200, {}, "User logged out successfully"));
 });
 
-  const changeCurrentPassword = asyncHandler(async(req,res) =>{
-  const {oldPassword, newPassword} = req.body
-  if(!oldPassword || !newPassword) throw new APIError(400, "Password fields are missing")
-  
-  const user = await User.findById(req.user?._id)
-  if(!user) throw new APIError(401, "Invalid Access Token")
-  const isMatched = await user.isPasswordCorrect(oldPassword)
-  if(!isMatched) throw new APIError(401, "Incorrect Password")
-  
-  if(oldPassword.trim() === newPassword.trim()) throw new APIError(400, "New Password cannot be same.")
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  if (!oldPassword || !newPassword)
+    throw new APIError(400, "Password fields are missing");
 
-  user.password = newPassword
-  await user.save()
+  const user = await User.findById(req.user?._id);
+  if (!user) throw new APIError(401, "Invalid Access Token");
+  const isMatched = await user.isPasswordCorrect(oldPassword);
+  if (!isMatched) throw new APIError(401, "Incorrect Password");
+
+  const isSame = await user.isPasswordCorrect(newPassword);
+  if (isSame) throw new APIError(400, "New password cannot be same as old");
+
+  user.password = newPassword;
+  await user.save();
 
   return res
-  .status(200)
-  .json(new APIResponse(200, {}, "Password Changes Successfully"))
+    .status(200)
+    .json(new APIResponse(200, {}, "Password Changes Successfully"));
+});
 
+
+const forgotPassword = asyncHandler(async(req,res) =>{
+  const {email} = req.body;
+  if(!email) throw new APIError(400, "Email is required")
+  
+  const user = await User.findOne({email}).select("name email role")
+  if(!user) throw new APIError(404, "No user found")
+  
+ const otp = await user.generatePasswordResetOTP();
+ console.log("Password Reset OTP: ",otp)  
+ 
+ const mailOptions = {
+  from: process.env.NODEMAILER_USER,
+  to: email,
+  subject: "Password Reset",
+  html: `<div style="max-width: 500px; margin: auto; padding: 20px; background: #ffffff; border: 1px solid #ddd; border-radius: 10px; font-family: Arial, sans-serif;">
+    <h2 style="text-align: center; color: #333;">Password Reset</h2>
+    <p style="font-size: 16px; color: #555;">
+      Hello, ${user.name}<br/><br/>
+      Your One-Time Password (OTP) for password reset is:
+    </p>
+    <div style="font-size: 28px; font-weight: bold; color: #007BFF; text-align: center; margin: 20px 0;">
+      ${otp}
+    </div>
+    <p style="font-size: 14px; color: #888;">
+      This OTP is valid for the next 10 minutes. Please do not share it with anyone.
+    </p>
+    <p style="font-size: 14px; color: #aaa; margin-top: 30px;">
+      – The TechTrendz Team
+    </p>
+  </div>`,
+};
+
+ transporter.sendMail(mailOptions)
+
+ return res
+ .status(200)
+ .json(new APIResponse(200, user, "Password Reset Otp sent successfully"))
+
+  
 })
+
+const passwordReset = asyncHandler(async(req,res) =>{
+  const {email, otp, newPassword} = req.body;
+  if(!email || !otp || !newPassword) throw new APIError(400, "All fields are required")
+  
+    const user = await User.findOne({email})
+    if(!user) throw new APIError(404, "User not found")
+    
+    const isValid = await user.verifyPasswordResetOTP(otp)
+    if(!isValid) throw new APIError(400, "Invalid or Expired OTP")
+    
+    const isSame = await user.isPasswordCorrect(newPassword)
+    if(isSame) throw new APIError(400, "New password cannot be same as old")
+    
+    user.password = newPassword
+    user.refreshToken = undefined
+    await user.save()
+
+    return res
+    .status(200)
+    .json(new APIResponse(200, {}, "Password reset successful. Please log in again with your new password."))
+})
+
 
 module.exports = {
   register_user,
@@ -186,5 +251,7 @@ module.exports = {
   login_user,
   logout_user,
   changeCurrentPassword,
+  forgotPassword,
+  passwordReset,
 
 };
