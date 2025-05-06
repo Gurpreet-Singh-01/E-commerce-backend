@@ -180,22 +180,21 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     .json(new APIResponse(200, {}, "Password Changes Successfully"));
 });
 
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if (!email) throw new APIError(400, "Email is required");
 
-const forgotPassword = asyncHandler(async(req,res) =>{
-  const {email} = req.body;
-  if(!email) throw new APIError(400, "Email is required")
-  
-  const user = await User.findOne({email}).select("name email role")
-  if(!user) throw new APIError(404, "No user found")
-  
- const otp = await user.generatePasswordResetOTP();
- console.log("Password Reset OTP: ",otp)  
- 
- const mailOptions = {
-  from: process.env.NODEMAILER_USER,
-  to: email,
-  subject: "Password Reset",
-  html: `<div style="max-width: 500px; margin: auto; padding: 20px; background: #ffffff; border: 1px solid #ddd; border-radius: 10px; font-family: Arial, sans-serif;">
+  const user = await User.findOne({ email }).select("name email role");
+  if (!user) throw new APIError(404, "No user found");
+
+  const otp = await user.generatePasswordResetOTP();
+  console.log("Password Reset OTP: ", otp);
+
+  const mailOptions = {
+    from: process.env.NODEMAILER_USER,
+    to: email,
+    subject: "Password Reset",
+    html: `<div style="max-width: 500px; margin: auto; padding: 20px; background: #ffffff; border: 1px solid #ddd; border-radius: 10px; font-family: Arial, sans-serif;">
     <h2 style="text-align: center; color: #333;">Password Reset</h2>
     <p style="font-size: 16px; color: #555;">
       Hello, ${user.name}<br/><br/>
@@ -211,39 +210,43 @@ const forgotPassword = asyncHandler(async(req,res) =>{
       – The TechTrendz Team
     </p>
   </div>`,
-};
+  };
 
- transporter.sendMail(mailOptions)
+  transporter.sendMail(mailOptions);
 
- return res
- .status(200)
- .json(new APIResponse(200, user, "Password Reset Otp sent successfully"))
-
-  
-})
-
-const passwordReset = asyncHandler(async(req,res) =>{
-  const {email, otp, newPassword} = req.body;
-  if(!email || !otp || !newPassword) throw new APIError(400, "All fields are required")
-  
-    const user = await User.findOne({email})
-    if(!user) throw new APIError(404, "User not found")
-    
-    const isValid = await user.verifyPasswordResetOTP(otp)
-    if(!isValid) throw new APIError(400, "Invalid or Expired OTP")
-    
-    const isSame = await user.isPasswordCorrect(newPassword)
-    if(isSame) throw new APIError(400, "New password cannot be same as old")
-    
-    user.password = newPassword
-    user.refreshToken = undefined
-    await user.save()
-
-    return res
+  return res
     .status(200)
-    .json(new APIResponse(200, {}, "Password reset successful. Please log in again with your new password."))
-})
+    .json(new APIResponse(200, user, "Password Reset Otp sent successfully"));
+});
 
+const passwordReset = asyncHandler(async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+  if (!email || !otp || !newPassword)
+    throw new APIError(400, "All fields are required");
+
+  const user = await User.findOne({ email });
+  if (!user) throw new APIError(404, "User not found");
+
+  const isValid = await user.verifyPasswordResetOTP(otp);
+  if (!isValid) throw new APIError(400, "Invalid or Expired OTP");
+
+  const isSame = await user.isPasswordCorrect(newPassword);
+  if (isSame) throw new APIError(400, "New password cannot be same as old");
+
+  user.password = newPassword;
+  user.refreshToken = undefined;
+  await user.save();
+
+  return res
+    .status(200)
+    .json(
+      new APIResponse(
+        200,
+        {},
+        "Password reset successful. Please log in again with your new password."
+      )
+    );
+});
 
 module.exports = {
   register_user,
@@ -253,5 +256,4 @@ module.exports = {
   changeCurrentPassword,
   forgotPassword,
   passwordReset,
-
 };
