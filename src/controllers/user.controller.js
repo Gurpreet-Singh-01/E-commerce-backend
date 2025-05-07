@@ -23,9 +23,11 @@ const generateAccessTokenAndRefreshToken = async (userId) => {
 };
 
 const register_user = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, gender, phone } = req.body;
 
-  if ([name, email, password].some((field) => field.trim() === ""))
+  if (
+    [name, email, password, gender, phone].some((field) => field.trim() === "")
+  )
     throw new APIError(401, "All fields are required");
 
   const isExistingUser = await User.findOne({ email });
@@ -37,11 +39,13 @@ const register_user = asyncHandler(async (req, res) => {
     name,
     email,
     password,
+    gender,
+    phone,
   });
   const otp = await newUser.generateEmailVerificationOTP();
 
   const createdUser = await User.findById(newUser._id).select(
-    "name email password role"
+    "name email password role gender password"
   );
 
   if (!createdUser)
@@ -304,6 +308,26 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
+const updateUserProfile = asyncHandler(async (req, res) => {
+  const { name, phone, gender } = req.body;
+  const user = await User.findById(req.user?._id);
+  if (name) user.name = name;
+  if (gender) user.gender = gender;
+  if (phone) user.phone = phone;
+  await user.save();
+  const updatedUser = await User.findById(user._id).select(
+    "name email gender phone role"
+  );
+  if (!updatedUser) throw new APIError(500, "Something went wrong");
+  return res.status(
+    200,
+    {
+      user: updatedUser,
+    },
+    "User updated successfully"
+  );
+});
+
 module.exports = {
   register_user,
   verify_user,
@@ -313,4 +337,6 @@ module.exports = {
   forgotPassword,
   passwordReset,
   refreshAccessToken,
+  updateUserProfile,
+  
 };
