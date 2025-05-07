@@ -492,7 +492,21 @@ const updateAddress = asyncHandler(async (req, res) => {
   .json(new APIResponse(200, address, "Address updated successfully"))
 
 });
-const deleteAddress = asyncHandler(async (req, res) => {});
+const deleteAddress = asyncHandler(async (req, res) => {
+  const {id} = req.params;
+  const user = await User.findById(req.user?._id)
+  if(!user) throw new APIError(401, "Invalid Access token")
+  
+  const isAddress = user.address.id(id)
+  if(!isAddress) throw new APIError(404, "Address not found")
+  
+  user.address.pull(id)
+  await user.save();
+
+  return res
+  .status(200)
+  .json(new APIResponse(200, {}, "Address deleted successfully"))
+});
 
 module.exports = {
   register_user,
