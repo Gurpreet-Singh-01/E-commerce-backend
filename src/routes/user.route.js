@@ -16,11 +16,11 @@ const router = require("express").Router();
 router.post("/register_user", register_user);
 router.post("/verify_user", verify_user);
 router.post("/login_user", login_user);
-router.get("/logout_user", verifyJWT ,logout_user);
-router.post("/change_password", verifyJWT ,changeCurrentPassword);
-router.post("/forgot_password" ,forgotPassword);
-router.post("/reset_password" ,passwordReset);
-router.post("/refresh_access_token" ,verifyJWT,refreshAccessToken);
-router.post("/update_userProfile" ,verifyJWT,updateUserProfile);
+router.get("/logout_user", verifyJWT, logout_user);
+router.post("/change_password", verifyJWT, changeCurrentPassword);
+router.post("/forgot_password", forgotPassword);
+router.post("/reset_password", passwordReset);
+router.post("/refresh_access_token", verifyJWT, refreshAccessToken);
+router.post("/update_userProfile", verifyJWT, updateUserProfile);
 
 module.exports = { router };

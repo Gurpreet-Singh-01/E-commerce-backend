@@ -159,7 +159,7 @@ const login_user = asyncHandler(async (req, res) => {
 
 const logout_user = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
-    req.user._id,
+    req.user?._id,
     {
       $set: {
         refreshToken: undefined,
@@ -311,6 +311,8 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 const updateUserProfile = asyncHandler(async (req, res) => {
   const { name, phone, gender } = req.body;
   const user = await User.findById(req.user?._id);
+  if (!user) throw new APIError(401, "Invalid Access token");
+
   if (name) user.name = name;
   if (gender) user.gender = gender;
   if (phone) user.phone = phone;
@@ -330,6 +332,45 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   );
 });
 
+const addAddress = asyncHandler(async (req, res) => {
+  const { houseNumber, street, colony, city, state, country, postalCode } =
+    req.body;
+  if (
+    [houseNumber, street, colony, city, state, country, postalCode].some(
+      (field) => field.trim() === ""
+    )
+  )
+    throw new APIError(400, "Adress fields are required");
+
+  const user = await User.findById(req.user?._id);
+  if (!user) throw new APIError(401, "Invalid Access token");
+  const newAddress = {
+    houseNumber,
+    street,
+    colony,
+    city,
+    state,
+    country,
+    postalCode,
+  };
+  user.address.push(newAddress);
+  await user.save();
+  const updatedUser = await User.findById(user._id).select(
+    "name email phone role address"
+  );
+  if (!updatedUser)
+    throw new APIError(500, "Something went wrong while adding address");
+  return res.status(201).json(
+    new APIResponse(
+      201,
+      {
+        user: updatedUser,
+      },
+      "Address added successfully"
+    )
+  );
+});
+
 module.exports = {
   register_user,
   verify_user,
@@ -340,4 +381,5 @@ module.exports = {
   passwordReset,
   refreshAccessToken,
   updateUserProfile,
+  addAddress,
 };
