@@ -319,12 +319,14 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     "name email gender phone role"
   );
   if (!updatedUser) throw new APIError(500, "Something went wrong");
-  return res.status(
-    200,
-    {
-      user: updatedUser,
-    },
-    "User updated successfully"
+  return res.status(200).json(
+    new APIResponse(
+      200,
+      {
+        user: updatedUser,
+      },
+      "User updated successfully"
+    )
   );
 });
 
@@ -338,5 +340,4 @@ module.exports = {
   passwordReset,
   refreshAccessToken,
   updateUserProfile,
-  
 };

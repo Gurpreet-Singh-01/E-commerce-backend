@@ -6,19 +6,19 @@ const userSchema = new Schema(
     name: {
       type: String,
       required: true,
-      trim:true
+      trim: true,
     },
     email: {
       type: String,
       unique: true,
       required: true,
       lowercase: true,
-      trim:true
+      trim: true,
     },
     password: {
       type: String,
       required: true,
-      trim:true
+      trim: true,
     },
     gender: {
       type: String,
@@ -55,21 +55,31 @@ const userSchema = new Schema(
       {
         houseNumber: {
           type: String,
+          required: true,
         },
         street: {
           type: String,
+          required: true,
+        },
+        colony: {
+          type: String,
+          required: true,
         },
         city: {
           type: String,
+          required: true,
         },
         state: {
           type: String,
+          required: true,
         },
         country: {
           type: String,
+          required: true,
         },
         postalCode: {
           type: String,
+          required: true,
         },
         isDefault: {
           type: Boolean,
@@ -148,7 +158,7 @@ userSchema.methods.verifyPasswordResetOTP = async function (otp) {
 
 userSchema.methods.generateEmailVerificationOTP = async function () {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  this.emailVerificationOtp = await bcrypt.hash(otp,10);
+  this.emailVerificationOtp = await bcrypt.hash(otp, 10);
   this.emailVerificationOtpExpires = Date.now() + 1000 * 60 * 10; // 10 min
   await this.save();
   return otp;
@@ -165,16 +175,13 @@ userSchema.methods.verifyEmailVerificationOTP = async function (otp) {
   }
   const isValid = await bcrypt.compare(otp, this.emailVerificationOtp);
   if (isValid) {
-    this.isVerified = true
+    this.isVerified = true;
     this.emailVerificationOtp = undefined;
     this.emailVerificationOtpExpires = undefined;
     await this.save();
   }
   return isValid;
 };
-
-
-
 
 const User = model("User", userSchema);
 module.exports = User;
