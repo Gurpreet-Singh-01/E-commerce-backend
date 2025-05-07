@@ -483,7 +483,7 @@ const updateAddress = asyncHandler(async (req, res) => {
   address.state= trimmedAddress.state;
   address.country= trimmedAddress.country;
   address.postalCode= trimmedAddress.postalCode;
-
+  address.isDefault = trimmedAddress.isDefault
 
   await user.save()
 
