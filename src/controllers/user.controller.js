@@ -331,18 +331,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 });
 
 const addAddress = asyncHandler(async (req, res) => {
-  const { houseNumber, street, colony, city, state, country, postalCode } =
-    req.body;
-  if (
-    [houseNumber, street, colony, city, state, country, postalCode].some(
-      (field) => field.trim() === ""
-    )
-  )
-    throw new APIError(400, "Adress fields are required");
-
-  const user = await User.findById(req.user?._id);
-  if (!user) throw new APIError(401, "Invalid Access token");
-  const newAddress = {
+  const {
     houseNumber,
     street,
     colony,
@@ -350,34 +339,160 @@ const addAddress = asyncHandler(async (req, res) => {
     state,
     country,
     postalCode,
+    isDefault,
+  } = req.body;
+  if (
+    !houseNumber ||
+    !street ||
+    !city ||
+    !state ||
+    !colony ||
+    !country ||
+    !postalCode
+  ) {
+    throw new APIError(
+      400,
+      "House number, street, colony, city, state, country, and postal code are required"
+    );
+  }
+
+  const trimmedAddress = {
+    houseNumber: houseNumber?.trim(),
+    street: street.trim(),
+    colony: colony.trim(),
+    city: city.trim(),
+    state: state.trim(),
+    country: country.trim(),
+    postalCode: postalCode.trim(),
+    isDefault: isDefault || false,
   };
-  user.address.push(newAddress);
+  if (
+    !trimmedAddress.houseNumber ||
+    !trimmedAddress.street ||
+    !trimmedAddress.colony ||
+    !trimmedAddress.city ||
+    !trimmedAddress.state ||
+    !trimmedAddress.country ||
+    !trimmedAddress.postalCode
+  ) {
+    throw new APIError(400, "Address fields cannot be empty");
+  }
+
+  const user = await User.findById(req.user?._id);
+  if (!user) throw new APIError(401, "Invalid Access token");
+
+  if (user.address.length >= 5) {
+    throw new APIError(400, "Cannot add more than 5 addresses");
+  }
+
+  if (trimmedAddress.isDefault) {
+    user.address.forEach((addr) => (addr.isDefault = false));
+  }
+
+  user.address.push(trimmedAddress);
+
   await user.save();
-  const updatedUser = await User.findById(user._id).select(
-    "name email phone role address"
-  );
-  if (!updatedUser)
-    throw new APIError(500, "Something went wrong while adding address");
-  return res.status(201).json(
-    new APIResponse(
-      201,
-      {
-        user: updatedUser,
-      },
-      "Address added successfully"
-    )
-  );
+
+  return res
+    .status(201)
+    .json(
+      new APIResponse(
+        201,
+        user.address[user.address.length - 1],
+        "Address added successfully"
+      )
+    );
 });
 
-const getUserProfile = asyncHandler(async(req,res) =>{
+const getUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user?._id).select(
     "name email gender phone address"
-  )
-  if(!user) throw new APIError(401, "Invalid Access Token")
+  );
+  if (!user) throw new APIError(401, "Invalid Access Token");
+  return res
+    .status(200)
+    .json(new APIResponse(200, user, "User fetched Successfully"));
+});
+
+const updateAddress = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user?._id);
+  if (!user) throw new APIError(401, "Invalid Access Token");
+
+  const { id } = req.params;
+
+  const {
+    houseNumber,
+    street,
+    colony,
+    city,
+    state,
+    country,
+    postalCode,
+    isDefault,
+  } = req.body;
+  if (
+    !houseNumber ||
+    !street ||
+    !city ||
+    !state ||
+    !colony ||
+    !country ||
+    !postalCode
+  ) {
+    throw new APIError(
+      400,
+      "House number, street, colony, city, state, country, and postal code are required"
+    );
+  }
+
+  const trimmedAddress = {
+    houseNumber: houseNumber?.trim(),
+    street: street.trim(),
+    colony: colony.trim(),
+    city: city.trim(),
+    state: state.trim(),
+    country: country.trim(),
+    postalCode: postalCode.trim(),
+    isDefault: isDefault || false,
+  };
+  if (
+    !trimmedAddress.houseNumber ||
+    !trimmedAddress.street ||
+    !trimmedAddress.colony ||
+    !trimmedAddress.city ||
+    !trimmedAddress.state ||
+    !trimmedAddress.country ||
+    !trimmedAddress.postalCode
+  ) {
+    throw new APIError(400, "Address fields cannot be empty");
+  }
+
+  const address = user.address.id(id);
+  if (!address) {
+    throw new APIError(404, "Address not found");
+  }
+
+  if(isDefault){
+    user.address.forEach((addr) => addr.isDefault = false)
+  }
+
+  address.houseNumber = trimmedAddress.houseNumber;
+  address.street= trimmedAddress.street;
+  address.colony= trimmedAddress.colony;
+  address.city= trimmedAddress.city;
+  address.state= trimmedAddress.state;
+  address.country= trimmedAddress.country;
+  address.postalCode= trimmedAddress.postalCode;
+
+
+  await user.save()
+
   return res
   .status(200)
-  .json(new APIResponse(200, user, "User fetched Successfully"))
-})
+  .json(new APIResponse(200, address, "Address updated successfully"))
+
+});
+const deleteAddress = asyncHandler(async (req, res) => {});
 
 module.exports = {
   register_user,
@@ -391,5 +506,6 @@ module.exports = {
   updateUserProfile,
   addAddress,
   getUserProfile,
-
+  updateAddress,
+  deleteAddress,
 };
