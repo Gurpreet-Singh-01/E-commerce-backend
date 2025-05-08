@@ -3,8 +3,8 @@ const app = express()
 const cookieParser = require('cookie-parser')
 const CORS = require('cors')
 const errorMiddleware = require('./middlewares/error.middleware')
-const { router } = require('./routes/user.route')
-
+const userRouter  = require('./routes/user.route')
+const productRouter = require('./routes/product.routes')
 app.use(
     CORS(
         {
@@ -21,8 +21,8 @@ app.use(cookieParser())
 app.use(express.static("public"))
 
 // Routes
-app.use('/api/v1/user',router)
-
+app.use('/api/v1/user',userRouter)
+app.use('api/v1/product',productRouter)
 
 
 app.use(errorMiddleware)

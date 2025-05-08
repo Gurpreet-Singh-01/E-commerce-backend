@@ -31,4 +31,4 @@ router.get("/user", verifyJWT, getUserProfile);
 router.patch("/update_address/:id", verifyJWT, updateAddress);
 router.delete("/delete_address/:id", verifyJWT, deleteAddress);
 
-module.exports = { router };
+module.exports =  router ;

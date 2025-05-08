@@ -303,7 +303,10 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       })
       .json(new APIResponse(200, {}, "Tokens generated successfully"));
   } catch (error) {
-    throw new APIError(401, error?.message || "Invalid Refresh Token");
+    if (error.name === "TokenExpiredError") {
+      throw new APIError(401, "Refresh token expired");
+    }
+    throw new APIError(401, error.message || "Invalid refresh token");
   }
 });
 

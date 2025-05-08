@@ -11,7 +11,7 @@ const verifyJWT = asyncHandler(async (req, _, next) => {
     const token =
       req.cookies?.accessToken ||
       (req.headers.authorization?.startsWith("Bearer") &&
-      req.headers.authorization.split(" ")[1]);
+        req.headers.authorization.split(" ")[1]);
 
     if (!token) throw new APIError(401, "No Access Token Provided");
 
@@ -26,7 +26,10 @@ const verifyJWT = asyncHandler(async (req, _, next) => {
     req.user = user;
     next();
   } catch (error) {
-    throw new APIError(401, error?.message || "Invalid Access Token")
+    if (error.name === "TokenExpiredError") {
+      throw new APIError(401, "Access token expired");
+    }
+    throw new APIError(401, error.message || "Invalid access token");
   }
 });
 
