@@ -26,18 +26,17 @@ const productSchema = new Schema(
       required: true,
       min: 0,
     },
-    images: [
-      {
-        url: {
-            type:String,
-            required:true
-        },
-        public_id: {
-            type:String,
-            required:true
-        }
+    images: {
+      url: {
+        type: String,
+        required: true,
       },
-    ],
+      public_id: {
+        type: String,
+        required: true,
+      },
+    },
+
     reviews: [
       {
         user: {
@@ -68,17 +67,19 @@ const productSchema = new Schema(
   { timestamps: true }
 );
 
-productSchema.index({name:'text', description:'text'})
-productSchema.index({category:1, price:1})
+productSchema.index({ name: "text", description: "text" });
+productSchema.index({ category: 1, price: 1 });
 
-productSchema.methods.updateAverageRating = async function(){
-    const reviews = this.reviews || [];
-    this.averageRating = reviews.length
-    ? Number(reviews.reduce((sum,review) => sum + review.rating, 0)/reviews.length).toFixed(0)
-    : 0
+productSchema.methods.updateAverageRating = async function () {
+  const reviews = this.reviews || [];
+  this.averageRating = reviews.length
+    ? Number(
+        reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+      ).toFixed(0)
+    : 0;
 
-    await this.save()
-}
+  await this.save();
+};
 
 const Product = model("Product", productSchema);
 module.exports = Product;
