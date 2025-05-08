@@ -41,6 +41,7 @@ const register_user = asyncHandler(async (req, res) => {
     password,
     gender,
     phone,
+    role:"customer"
   });
   const otp = await newUser.generateEmailVerificationOTP();
 
