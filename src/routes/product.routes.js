@@ -5,6 +5,6 @@ const restrictToAdmin = require('../middlewares/restrictToAdmin.middleware');
 const router = require('express').Router();
 
 
-router.post('/add_product', verifyJWT, restrictToAdmin, upload.single())
+// router.post('/add_product', verifyJWT, restrictToAdmin, upload.single("image"))
 
-module.exports = router
+module.exports = router 
