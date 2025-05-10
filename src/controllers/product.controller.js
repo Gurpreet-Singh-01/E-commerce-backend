@@ -3,6 +3,7 @@ const Product = require("../models/Product.model");
 const APIError = require("../utils/API_utilities/APIError");
 const APIResponse = require("../utils/API_utilities/APIResponse");
 const asyncHandler = require("../utils/API_utilities/asyncHandler");
+const mongoose = require('mongoose')
 const {
   uploadOnCloudinary,
   removeFromCloudinary,
@@ -99,7 +100,62 @@ const deleteProduct = asyncHandler(async (req, res) => {
 });
 
 const getProducts = asyncHandler(async (req, res) => {
-  const products = await Product.find().populate("category", "name");
+  const { minPrice, maxPrice, search, category } = req.query;
+  const query = {};
+
+  // Price filter
+  if (minPrice || maxPrice) {
+    query.price = {};
+
+    if (minPrice) {
+      const min = Number(String(minPrice).trim());
+      if (isNaN(min) || min < 0)
+        throw new APIError(400, "Invalid Minimum Price");
+      query.price.$gte = min;
+    }
+
+    if (maxPrice) {
+      const max = Number(String(maxPrice).trim());
+      if (isNaN(max) || max < 0)
+        throw new APIError(400, "Invalid Maximum Price");
+      query.price.$lte = max;
+    }
+
+    if (
+      query.price.$gte &&
+      query.price.$lte &&
+      query.price.$gte > query.price.$lte
+    )
+      throw new APIError(400, "Invalid Range");
+  }
+
+  // category filter
+  if (category) {
+    if (!mongoose.Types.ObjectId.isValid(category))
+      throw new APIError(400, "Invalid Category ID");
+    const isCategory = await Category.findById(category);
+    if (!isCategory) throw new APIError(400, "Invalid Category ID");
+    query.category = category;
+  }
+
+  // search Filter
+  let products;
+  if (search) {
+    const searchTerm = search.trim();
+    if (searchTerm) {
+      query.$text = { $search: searchTerm };
+      products = await Product.find(query)
+        .populate("category", "name")
+        .sort({
+          score: { $meta: "textScore" },
+        });
+    } else {
+      products = await Product.find(query).populate("category", "name");
+    }
+  } else {
+    products = await Product.find(query).populate("category", "name");
+  }
+
   return res
     .status(200)
     .json(new APIResponse(200, products, "Products fetched successfully"));
