@@ -3,7 +3,7 @@ const Product = require("../models/Product.model");
 const APIError = require("../utils/API_utilities/APIError");
 const APIResponse = require("../utils/API_utilities/APIResponse");
 const asyncHandler = require("../utils/API_utilities/asyncHandler");
-const mongoose = require('mongoose')
+const mongoose = require("mongoose");
 const {
   uploadOnCloudinary,
   removeFromCloudinary,
@@ -159,6 +159,15 @@ const getProducts = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new APIResponse(200, products, "Products fetched successfully"));
+});
+
+const getProductByCategory = asyncHandler(async (req, res) => {
+  const {id} = req.params;
+  const isCategory = await Category.findById(id)
+  if(!isCategory) throw new APIError(400, "Invalid Category Id")
+
+  req.query.category = id
+  await getProducts(req,res)
 });
 
 const getProductByID = asyncHandler(async (req, res) => {
