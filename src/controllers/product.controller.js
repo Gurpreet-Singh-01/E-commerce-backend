@@ -162,12 +162,12 @@ const getProducts = asyncHandler(async (req, res) => {
 });
 
 const getProductByCategory = asyncHandler(async (req, res) => {
-  const {id} = req.params;
-  const isCategory = await Category.findById(id)
-  if(!isCategory) throw new APIError(400, "Invalid Category Id")
+  const { id } = req.params;
+  const isCategory = await Category.findById(id);
+  if (!isCategory) throw new APIError(400, "Invalid Category Id");
 
-  req.query.category = id
-  await getProducts(req,res)
+  req.query.category = id;
+  await getProducts(req, res);
 });
 
 const getProductByID = asyncHandler(async (req, res) => {
