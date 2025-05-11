@@ -186,4 +186,6 @@ module.exports = {
   deleteProduct,
   getProducts,
   getProductByID,
+  getProductByCategory,
+  
 };
