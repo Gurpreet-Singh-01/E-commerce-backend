@@ -6,7 +6,6 @@ const errorMiddleware = require('./middlewares/error.middleware')
 const userRouter  = require('./routes/user.routes')
 const productRouter = require('./routes/product.routes')
 const categoryRouter = require('./routes/category.routes')
-const productRouter = require('./routes/product.routes')
 app.use(
     CORS(
         {
@@ -26,7 +25,6 @@ app.use(express.static("public"))
 app.use('/api/v1/user',userRouter)
 app.use('/api/v1/product',productRouter)
 app.use('/api/v1/category',categoryRouter)
-app.use('/api/v1/product',productRouter)
 
 
 app.use(errorMiddleware)
