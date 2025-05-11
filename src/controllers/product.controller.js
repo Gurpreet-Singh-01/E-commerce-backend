@@ -161,15 +161,6 @@ const getProducts = asyncHandler(async (req, res) => {
     .json(new APIResponse(200, products, "Products fetched successfully"));
 });
 
-const getProductByCategory = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const isCategory = await Category.findById(id);
-  if (!isCategory) throw new APIError(400, "Invalid Category Id");
-
-  req.query.category = id;
-  await getProducts(req, res);
-});
-
 const getProductByID = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const product = await Product.findById(id).populate("category", "name");
@@ -186,6 +177,5 @@ module.exports = {
   deleteProduct,
   getProducts,
   getProductByID,
-  getProductByCategory,
   
 };

@@ -10,7 +10,6 @@ const router = require('express').Router();
 
 
 router.get('/', getProducts )
-router.get('/category/:id', getProductByCategory )
 router.get('/:id', getProductByID )
 router.use(verifyJWT,restrictToAdmin)
 
