@@ -6,6 +6,9 @@ const errorMiddleware = require('./middlewares/error.middleware')
 const userRouter  = require('./routes/user.routes')
 const productRouter = require('./routes/product.routes')
 const categoryRouter = require('./routes/category.routes')
+const morgan = require('morgan')
+
+app.use(morgan('dev'))
 app.use(
     CORS(
         {
