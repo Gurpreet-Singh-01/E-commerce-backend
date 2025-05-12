@@ -44,9 +44,9 @@ const orderSchema = new Schema(
         required: true,
       },
       colony: {
-          type: String,
-          required: true,
-        },
+        type: String,
+        required: true,
+      },
       city: {
         type: String,
         required: true,
@@ -65,9 +65,14 @@ const orderSchema = new Schema(
       },
     },
     payment: {
+      method: {
+        type: String,
+        enum: ["cod", "online"],
+        default: "online",
+      },
       transactionId: {
         type: String,
-        required: true,
+        required: false,
       },
       status: {
         type: String,
