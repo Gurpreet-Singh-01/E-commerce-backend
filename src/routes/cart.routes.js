@@ -1,11 +1,19 @@
-const { addToCart, getCart } = require('../controllers/cart.controller');
-const verifyJWT = require('../middlewares/auth.middleware');
+const {
+  addToCart,
+  getCart,
+  clearCart,
+  updateCartItem,
+  removeFromCart,
+} = require("../controllers/cart.controller");
+const verifyJWT = require("../middlewares/auth.middleware");
 
-const router = require('express').Router();
+const router = require("express").Router();
 
+router.use(verifyJWT);
+router.post("/", addToCart);
+router.get("/", getCart);
+router.delete("/clear_cart", clearCart);
+router.patch("/:productId", updateCartItem);
+router.delete("/:productId", removeFromCart);
 
-router.use(verifyJWT)
-router.post('/',addToCart)
-router.get('/',getCart)
-
-module.exports = router
+module.exports = router;
