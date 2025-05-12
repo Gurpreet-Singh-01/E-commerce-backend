@@ -90,7 +90,7 @@ const updateCartItem = asyncHandler(async (req, res) => {
     (item) => item.product.toString() === productId
   );
 
-  if (itemIndex < -1) throw new APIError(404, "Product not in the cart");
+  if (itemIndex === -1) throw new APIError(404, "Product not in the cart");
 
   cart.items[itemIndex].quantity = qty;
   await cart.save();
@@ -144,4 +144,5 @@ module.exports = {
   clearCart,
   updateCartItem,
   removeFromCart,
+
 };
