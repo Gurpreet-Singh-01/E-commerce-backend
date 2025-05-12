@@ -52,7 +52,7 @@ const createOrder = asyncHandler(async (req, res) => {
       !country ||
       !postalCode
     )
-      throw new APIError(400, "Complete shipping addresss is requiured");
+      throw new APIError(400, "Complete shipping addresss is required");
 
     finalAddress = {
       houseNumber,
