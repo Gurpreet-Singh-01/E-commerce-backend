@@ -15,7 +15,7 @@ const addToCart = asyncHandler(async (req, res) => {
   if (isNaN(qty) || qty < 1)
     throw new APIError(400, "Quantity must a valid number");
 
-  const product = await Product.findOne(productId);
+  const product = await Product.findById(productId);
   if (!product) throw new APIError(404, "Product not found");
 
   if (product.stock < qty)
@@ -45,13 +45,26 @@ const addToCart = asyncHandler(async (req, res) => {
     await cart.save()
   }
 
-  await cart.populate("items.product", "name", "price", "category", "image", "stock")
+  await cart.populate("items.product", "name price category image stock")
 
   return res.status(201)
   .json(new APIResponse(201, cart, "Products added to cart successfully"))
 
 });
 
+const getCart = asyncHandler(async(req,res) =>{
+    const userId = req.user?._id
+
+    const cart = await Cart.findOne({user:userId}).populate("items.product", "name price category image stock")
+    if(!cart){
+        return res.status(200).json(new APIResponse(200, [], "cart fetched successfully"))
+    }
+    res.status(200).json(new APIResponse(200, cart, "cart fetched successfully"))
+
+})
+
 module.exports = {
   addToCart,
+  getCart,
+  
 };
