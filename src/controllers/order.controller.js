@@ -125,6 +125,65 @@ const createOrder = asyncHandler(async (req, res) => {
     .json(new APIResponse(201, order, "Order Created Successfully"));
 });
 
+const getUsersOrder = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const orders = await Order.find({ user: userId }).populate(
+    "items.product",
+    "name category price image stock"
+  );
+  return res
+    .status(200)
+    .json(new APIResponse(200, orders, "Orders fetched successfully"));
+});
+
+const getOrderbyId = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+  const order = await Order.findById(id).populate(
+    "items.product",
+    "name category image stock price"
+  );
+  if (!order) throw new APIError(404, "Order not found");
+  // admin and logged in user only
+  if (order.user.toString() !== userId.toString() && req.user.role !== "admin")
+    throw new APIError(403, "Unauthorized to view this order");
+  res
+    .status(200)
+    .json(new APIResponse(200, order, "Order fetched successfully"));
+});
+
+// Admin only
+
+const getAllOrders = asyncHandler(async (req, res) => {
+  const { status, method } = req.query;
+
+  const validStatuses = ["pending", "shipped", "delivered", "cancelled"];
+  const validMethods = ["cod", "online"];
+
+  if (status && !validStatuses.includes(status))
+    throw new APIError(400, "Invalid status filter");
+  if (method && !validMethods.includes(method))
+    throw new APIError(400, "Invalid payment method filter");
+
+  const query = {};
+
+  if (status) {
+    query["payment.status"] = status;
+  }
+  if (method) {
+    query["payment.method"] = method;
+  }
+  const orders = await Order.find(query)
+    .populate("items.product", "name price image category stock")
+    .populate("user", "name email");
+
+    res.status(200).json(new APIResponse(200, orders, "Orders fetced Successfully"))
+});
+
+
 module.exports = {
   createOrder,
+  getUsersOrder,
+  getOrderbyId,
+  getAllOrders,
 };

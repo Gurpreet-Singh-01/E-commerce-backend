@@ -8,6 +8,7 @@ const productRouter = require('./routes/product.routes')
 const categoryRouter = require('./routes/category.routes')
 const cartRouter = require('./routes/cart.routes')
 const orderRouter = require('./routes/order.routes')
+const adminRouter = require('./routes/admin.routes')
 const morgan = require('morgan')
 
 app.use(morgan('dev'))
@@ -32,6 +33,6 @@ app.use('/api/v1/product',productRouter)
 app.use('/api/v1/category',categoryRouter)
 app.use('/api/v1/cart',cartRouter)
 app.use('/api/v1/order',orderRouter)
-
+app.use('/api/v1/admin', adminRouter)
 app.use(errorMiddleware)
 module.exports = {app}

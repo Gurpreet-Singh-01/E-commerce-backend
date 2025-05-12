@@ -410,7 +410,7 @@ const addAddress = asyncHandler(async (req, res) => {
 
 const getUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user?._id).select(
-    "name email gender phone address"
+    "name email gender phone address role"
   );
   if (!user) throw new APIError(401, "Invalid Access Token");
   return res
