@@ -41,7 +41,7 @@ const register_user = asyncHandler(async (req, res) => {
     password,
     gender,
     phone,
-    role:"customer"
+    role: "customer",
   });
   const otp = await newUser.generateEmailVerificationOTP();
 
@@ -423,7 +423,6 @@ const updateAddress = asyncHandler(async (req, res) => {
   if (!user) throw new APIError(401, "Invalid Access Token");
 
   const { id } = req.params;
-
   const {
     houseNumber,
     street,
@@ -434,41 +433,19 @@ const updateAddress = asyncHandler(async (req, res) => {
     postalCode,
     isDefault,
   } = req.body;
-  if (
-    !houseNumber ||
-    !street ||
-    !city ||
-    !state ||
-    !colony ||
-    !country ||
-    !postalCode
-  ) {
-    throw new APIError(
-      400,
-      "House number, street, colony, city, state, country, and postal code are required"
-    );
-  }
 
-  const trimmedAddress = {
-    houseNumber: houseNumber?.trim(),
-    street: street.trim(),
-    colony: colony.trim(),
-    city: city.trim(),
-    state: state.trim(),
-    country: country.trim(),
-    postalCode: postalCode.trim(),
-    isDefault: isDefault || false,
-  };
+  // Check if at least one field is provided
   if (
-    !trimmedAddress.houseNumber ||
-    !trimmedAddress.street ||
-    !trimmedAddress.colony ||
-    !trimmedAddress.city ||
-    !trimmedAddress.state ||
-    !trimmedAddress.country ||
-    !trimmedAddress.postalCode
+    !houseNumber &&
+    !street &&
+    !colony &&
+    !city &&
+    !state &&
+    !country &&
+    !postalCode &&
+    isDefault === undefined
   ) {
-    throw new APIError(400, "Address fields cannot be empty");
+    throw new APIError(400, "At least one address field must be provided");
   }
 
   const address = user.address.id(id);
@@ -476,40 +453,69 @@ const updateAddress = asyncHandler(async (req, res) => {
     throw new APIError(404, "Address not found");
   }
 
-  if(isDefault){
-    user.address.forEach((addr) => addr.isDefault = false)
+  // Validate and update provided fields
+  if (houseNumber) {
+    const trimmed = houseNumber.trim();
+    if (!trimmed) throw new APIError(400, "House number cannot be empty");
+    address.houseNumber = trimmed;
+  }
+  if (street) {
+    const trimmed = street.trim();
+    if (!trimmed) throw new APIError(400, "Street cannot be empty");
+    address.street = trimmed;
+  }
+  if (colony) {
+    const trimmed = colony.trim();
+    if (!trimmed) throw new APIError(400, "Colony cannot be empty");
+    address.colony = trimmed;
+  }
+  if (city) {
+    const trimmed = city.trim();
+    if (!trimmed) throw new APIError(400, "City cannot be empty");
+    address.city = trimmed;
+  }
+  if (state) {
+    const trimmed = state.trim();
+    if (!trimmed) throw new APIError(400, "State cannot be empty");
+    address.state = trimmed;
+  }
+  if (country) {
+    const trimmed = country.trim();
+    if (!trimmed) throw new APIError(400, "Country cannot be empty");
+    address.country = trimmed;
+  }
+  if (postalCode) {
+    const trimmed = postalCode.trim();
+    if (!trimmed) throw new APIError(400, "Postal code cannot be empty");
+    address.postalCode = trimmed;
+  }
+  if (isDefault !== undefined) {
+    if (isDefault) {
+      user.address.forEach((addr) => (addr.isDefault = false));
+    }
+    address.isDefault = isDefault;
   }
 
-  address.houseNumber = trimmedAddress.houseNumber;
-  address.street= trimmedAddress.street;
-  address.colony= trimmedAddress.colony;
-  address.city= trimmedAddress.city;
-  address.state= trimmedAddress.state;
-  address.country= trimmedAddress.country;
-  address.postalCode= trimmedAddress.postalCode;
-  address.isDefault = trimmedAddress.isDefault
-
-  await user.save()
-
-  return res
-  .status(200)
-  .json(new APIResponse(200, address, "Address updated successfully"))
-
-});
-const deleteAddress = asyncHandler(async (req, res) => {
-  const {id} = req.params;
-  const user = await User.findById(req.user?._id)
-  if(!user) throw new APIError(401, "Invalid Access token")
-  
-  const isAddress = user.address.id(id)
-  if(!isAddress) throw new APIError(404, "Address not found")
-  
-  user.address.pull(id)
   await user.save();
 
   return res
-  .status(200)
-  .json(new APIResponse(200, {}, "Address deleted successfully"))
+    .status(200)
+    .json(new APIResponse(200, address, "Address updated successfully"));
+});
+const deleteAddress = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const user = await User.findById(req.user?._id);
+  if (!user) throw new APIError(401, "Invalid Access token");
+
+  const isAddress = user.address.id(id);
+  if (!isAddress) throw new APIError(404, "Address not found");
+
+  user.address.pull(id);
+  await user.save();
+
+  return res
+    .status(200)
+    .json(new APIResponse(200, {}, "Address deleted successfully"));
 });
 
 module.exports = {
