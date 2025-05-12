@@ -6,6 +6,7 @@ const errorMiddleware = require('./middlewares/error.middleware')
 const userRouter  = require('./routes/user.routes')
 const productRouter = require('./routes/product.routes')
 const categoryRouter = require('./routes/category.routes')
+const cartRouter = require('./routes/cart.routes')
 const morgan = require('morgan')
 
 app.use(morgan('dev'))
@@ -28,6 +29,7 @@ app.use(express.static("public"))
 app.use('/api/v1/user',userRouter)
 app.use('/api/v1/product',productRouter)
 app.use('/api/v1/category',categoryRouter)
+app.use('/api/v1/cart',cartRouter)
 
 
 app.use(errorMiddleware)
