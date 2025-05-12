@@ -43,6 +43,10 @@ const orderSchema = new Schema(
         type: String,
         required: true,
       },
+      colony: {
+          type: String,
+          required: true,
+        },
       city: {
         type: String,
         required: true,
@@ -67,7 +71,7 @@ const orderSchema = new Schema(
       },
       status: {
         type: String,
-        enum: ["pending", "shipped", "delivered"],
+        enum: ["pending", "shipped", "delivered", "cancelled"],
         default: "pending",
       },
     },
