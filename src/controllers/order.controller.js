@@ -177,13 +177,58 @@ const getAllOrders = asyncHandler(async (req, res) => {
     .populate("items.product", "name price image category stock")
     .populate("user", "name email");
 
-    res.status(200).json(new APIResponse(200, orders, "Orders fetced Successfully"))
+  res
+    .status(200)
+    .json(new APIResponse(200, orders, "Orders fetced Successfully"));
 });
 
+const updateOrderStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (
+    !status ||
+    !["pending", "shipped", "delivered", "cancelled"].includes(status)
+  )
+    throw new APIError(400, "Invalid Status");
+  const order = await Order.findById(id);
+  if (!order) throw new APIError(404, "Order not found");
+
+  order.payment.status = status;
+  await order.save();
+
+  await order.populate("items.product", "name price image category stock");
+  res
+    .status(200)
+    .json(new APIResponse(200, order, "Order status updated successfully"));
+});
+
+const cancelOrder = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const order = await Order.findById(id);
+  if (!order) {
+    throw new APIError(404, "Order not found");
+  }
+
+  if (order.payment.status === "cancelled") {
+    throw new APIError(400, "Order is already cancelled");
+  }
+
+  order.payment.status = "cancelled";
+  await order.save();
+
+  await order.populate("items.product", "name price image category stock");
+  res
+    .status(200)
+    .json(new APIResponse(200, order, "Order cancelled successfully"));
+});
 
 module.exports = {
   createOrder,
   getUsersOrder,
   getOrderbyId,
   getAllOrders,
+  updateOrderStatus,
+  cancelOrder,
 };
