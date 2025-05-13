@@ -27,17 +27,19 @@ const getDashboardStatus = asyncHandler(async (req, res) => {
     totalCustomers,
     totalProducts,
     totalRevenue: totalRevenue[0]?.total || 0,
-    ordersByStatus: totalOrdersByStatus.reduce((acc,{_id,count}) =>{
-        acc[_id] = count
-        return acc
-    },{}),
-    ordersByMethod: totalOrdersByMethod.reduce((acc,{_id,count}) =>{
-        acc[_id] = count
-    },{})
-  }
+    ordersByStatus: totalOrdersByStatus.reduce((acc, { _id, count }) => {
+      acc[_id] = count;
+      return acc;
+    }, {}),
+    ordersByMethod: totalOrdersByMethod.reduce((acc, { _id, count }) => {
+      acc[_id] = count;
+      return acc;
+    }, {}),
+  };
 
-  res.status(200)
-  .json(new APIResponse(200, stats, "Dashboard stats fetched successfully"))
+  res
+    .status(200)
+    .json(new APIResponse(200, stats, "Dashboard stats fetched successfully"));
 });
 
 module.exports = {
