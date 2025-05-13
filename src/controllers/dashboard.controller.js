@@ -1,6 +1,7 @@
 const Order = require("../models/Order.model");
 const Product = require("../models/Product.model");
 const User = require("../models/user.model");
+const APIError = require("../utils/API_utilities/APIError");
 const APIResponse = require("../utils/API_utilities/APIResponse");
 const asyncHandler = require("../utils/API_utilities/asyncHandler");
 
@@ -42,6 +43,40 @@ const getDashboardStatus = asyncHandler(async (req, res) => {
     .json(new APIResponse(200, stats, "Dashboard stats fetched successfully"));
 });
 
+const getRecentOrders = asyncHandler(async (req, res) => {
+  const { status, method } = req.params;
+
+  const validStatuses = ["pending", "shipped", "delivered", "cancelled"];
+  const validMethods = ["cod", "online"];
+
+  const query = {};
+
+  if (status && !validStatuses.includes(status))
+    throw new APIError(400, "Invalid status filter");
+  if (method && !validMethods.includes(method))
+    throw new APIError(400, "Invalid method filter");
+
+  if (status) {
+    query["payment.status"] = status;
+  }
+
+  if (method) {
+    query["payment.method"] = method;
+  }
+
+  const recentOrders = await Order.find(query)
+    .sort({ createdAt: -1 })
+    .limit(10)
+    .populate("items.product", "name category price stock image")
+    .populate("user", "name email");
+
+  res
+    .status(200)
+    .json(
+      new APIResponse(200, recentOrders, "Recent Orders fetched successfully")
+    );
+});
 module.exports = {
   getDashboardStatus,
+  getRecentOrders
 };
