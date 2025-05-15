@@ -127,10 +127,15 @@ const createOrder = asyncHandler(async (req, res) => {
 
 const getUsersOrder = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  const orders = await Order.find({ user: userId }).populate(
-    "items.product",
-    "name category price image stock"
-  );
+  const orders = await Order.find({ user: userId })
+  .populate({
+    path:"items.product",
+    select:"name category image stock price",
+    populate:{
+      path:"category",
+      select:"name"
+    }
+  })
   return res
     .status(200)
     .json(new APIResponse(200, orders, "Orders fetched successfully"));
@@ -139,9 +144,15 @@ const getUsersOrder = asyncHandler(async (req, res) => {
 const getOrderbyId = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const userId = req.user._id;
-  const order = await Order.findById(id).populate(
-    "items.product",
-    "name category image stock price"
+  const order = await Order.findById(id).populate({
+    path:"items.product",
+    select:"name category image stock price",
+    populate:{
+      path:"category",
+      select :"name"
+    }
+  }
+    
   );
   if (!order) throw new APIError(404, "Order not found");
   // admin and logged in user only
@@ -174,7 +185,16 @@ const getAllOrders = asyncHandler(async (req, res) => {
     query["payment.method"] = method;
   }
   const orders = await Order.find(query)
-    .populate("items.product", "name price image category stock")
+    .populate(
+      {
+        path:"items.product",
+        select:"name category image stock price",
+        populate:{
+          path:"category",
+          select:"name"
+        }
+      }
+    )
     .populate("user", "name email");
 
   res

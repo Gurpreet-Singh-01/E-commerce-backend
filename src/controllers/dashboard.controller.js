@@ -67,7 +67,14 @@ const getRecentOrders = asyncHandler(async (req, res) => {
   const recentOrders = await Order.find(query)
     .sort({ createdAt: -1 })
     .limit(10)
-    .populate("items.product", "name category price stock image")
+    .populate({
+      path: "items.product",
+      select: "name image price stock category",
+      populate: {
+        path: "category",
+        select: "name",
+      },
+    })
     .populate("user", "name email");
 
   res
@@ -135,5 +142,5 @@ const getTopProducts = asyncHandler(async (req, res) => {
 module.exports = {
   getDashboardStatus,
   getRecentOrders,
-  getTopProducts
+  getTopProducts,
 };
