@@ -76,7 +76,64 @@ const getRecentOrders = asyncHandler(async (req, res) => {
       new APIResponse(200, recentOrders, "Recent Orders fetched successfully")
     );
 });
+
+const getTopProducts = asyncHandler(async (req, res) => {
+  const topProducts = await Order.aggregate([
+    {
+      $unwind: "$items",
+    },
+    {
+      $group: {
+        _id: "$items.product",
+        totalQuantity: { $sum: "$items.quantity" },
+        totalRevenue: {
+          $sum: { $multiply: ["$items.quantity", "$items.price"] },
+        },
+      },
+    },
+    {
+      $lookup: {
+        from: "products",
+        localField: "_id",
+        foreignField: "_id",
+        as: "product",
+      },
+    },
+    {
+      $unwind: "$product",
+    },
+    {
+      $lookup: {
+        from: "categories",
+        localField: "product.category",
+        foreignField: "_id",
+        as: "category",
+      },
+    },
+    {
+      $unwind: "$category",
+    },
+
+    {
+      $project: {
+        name: "$product.name",
+        image: "$product.image.url",
+        category: "$category.name",
+        totalRevenue: 1,
+        totalQuantity: 1,
+      },
+    },
+    {
+      $sort: { totalQuantity: -1 },
+    },
+    {
+      $limit: 5,
+    },
+  ]);
+});
+
 module.exports = {
   getDashboardStatus,
-  getRecentOrders
+  getRecentOrders,
+  getTopProducts
 };
