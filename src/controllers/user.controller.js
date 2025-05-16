@@ -46,7 +46,7 @@ const register_user = asyncHandler(async (req, res) => {
   const otp = await newUser.generateEmailVerificationOTP();
 
   const createdUser = await User.findById(newUser._id).select(
-    "name email password role gender password"
+    "name email role gender"
   );
 
   if (!createdUser)
@@ -290,7 +290,9 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     user.refreshToken = newRefreshToken;
 
     await user.save({ validateBeforeSave: false });
-
+    const updatedUser = await User.findById(user._id).select(
+      "name email role gender"
+    );
     return res
       .status(200)
       .cookie("accessToken", accessToken, {
@@ -301,7 +303,15 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         ...COOKIE_OPTIONS,
         maxAge: 1000 * 60 * 60 * 24 * 5,
       })
-      .json(new APIResponse(200, {}, "Tokens generated successfully"));
+      .json(
+        new APIResponse(
+          200,
+          {
+            user: updatedUser,
+          },
+          "Tokens generated successfully"
+        )
+      );
   } catch (error) {
     if (error.name === "TokenExpiredError") {
       throw new APIError(401, "Refresh token expired");
