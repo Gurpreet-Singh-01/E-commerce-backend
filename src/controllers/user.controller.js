@@ -157,15 +157,26 @@ const login_user = asyncHandler(async (req, res) => {
 });
 
 const logout_user = asyncHandler(async (req, res) => {
-  await User.findByIdAndUpdate(
-    req.user?._id,
-    {
-      $set: {
-        refreshToken: undefined,
-      },
-    },
-    { new: true }
-  );
+  const incomingRefreshToken =
+    req.cookies.refreshToken || req.body.refreshToken;
+  if (incomingRefreshToken) {
+    try {
+      const decodedToken = JWT.decode(incomingRefreshToken);
+      if (decodedToken?._id) {
+        await User.findByIdAndUpdate(
+          decodedToken._id,
+          {
+            $set: {
+              refreshToken: undefined,
+            },
+          },
+          { new: true }
+        );
+      }
+    } catch (error) {
+      console.error("Error updating refresh token in DB:", error);
+    }
+  }
 
   return res
     .status(200)

@@ -44,7 +44,7 @@ const getDashboardStatus = asyncHandler(async (req, res) => {
 });
 
 const getRecentOrders = asyncHandler(async (req, res) => {
-  const { status, method } = req.params;
+  const { status, method } = req.query;
 
   const validStatuses = ["pending", "shipped", "delivered", "cancelled"];
   const validMethods = ["cod", "online"];
