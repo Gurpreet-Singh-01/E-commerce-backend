@@ -76,7 +76,6 @@ const register_user = asyncHandler(async (req, res) => {
     try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    // Delete user if email fails to prevent unverified accounts
     await User.deleteOne({ _id: createdUser._id });
     throw new APIError(500, "Failed to send OTP email. Please try again.");
   }
@@ -95,7 +94,7 @@ const resend_otp = asyncHandler(async (req, res) => {
   if (!user) throw new APIError(404, "User not found");
   if (user.isVerified) throw new APIError(400, "User is already verified");
 
-  const otp = await User.generateEmailVerificationOTP();
+  const otp = await user.generateEmailVerificationOTP();
   const mailOptions = {
     from: process.env.NODEMAILER_USER,
     to: email,
