@@ -10,6 +10,7 @@ const cartRouter = require("./routes/cart.routes");
 const orderRouter = require("./routes/order.routes");
 const adminRouter = require("./routes/admin.routes");
 const morgan = require("morgan");
+const { cleanupUnverifiedUsers } = require("./utils/cronJobs");
 
 app.use(morgan("dev"));
 app.use(
@@ -32,4 +33,5 @@ app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/order", orderRouter);
 app.use("/api/v1/admin", adminRouter);
 app.use(errorMiddleware);
+cleanupUnverifiedUsers()
 module.exports = { app };

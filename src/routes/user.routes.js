@@ -12,12 +12,20 @@ const {
   getUserProfile,
   updateAddress,
   deleteAddress,
+  resend_otp,
 } = require("../controllers/user.controller");
 const verifyJWT = require("../middlewares/auth.middleware");
-
+const rateLimit = require('express-rate-limit')
 const router = require("express").Router();
 
+const resendOtpLimiter = rateLimit({
+  windowMs:  60 * 1000, 
+  max: 2, 
+  message: 'Too many OTP requests, please try again later',
+});
+
 router.post("/register_user", register_user);
+router.post('/resend_otp',resendOtpLimiter, resend_otp);
 router.post("/verify_user", verify_user);
 router.post("/login_user", login_user);
 router.get("/logout_user", logout_user);

@@ -137,6 +137,9 @@ const getTopProducts = asyncHandler(async (req, res) => {
       $limit: 5,
     },
   ]);
+  res.status(200).json(
+    new APIResponse(200, topProducts, "Top products retrieved successfully")
+  );
 });
 
 module.exports = {

@@ -73,11 +73,59 @@ const register_user = asyncHandler(async (req, res) => {
     </div>`,
   };
 
-  await transporter.sendMail(mailOptions);
+    try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    // Delete user if email fails to prevent unverified accounts
+    await User.deleteOne({ _id: createdUser._id });
+    throw new APIError(500, "Failed to send OTP email. Please try again.");
+  }
 
   return res
     .status(200)
     .json(new APIResponse(200, createdUser, "User Created Successfully"));
+});
+
+const resend_otp = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) throw new APIError(400, "Email is required");
+
+  const user = await User.findOne({ email });
+  if (!user) throw new APIError(404, "User not found");
+  if (user.isVerified) throw new APIError(400, "User is already verified");
+
+  const otp = await User.generateEmailVerificationOTP();
+  const mailOptions = {
+    from: process.env.NODEMAILER_USER,
+    to: email,
+    subject: "TechTrendz Account Verification",
+    html: `<div style="max-width: 500px; margin: auto; padding: 20px; background: #ffffff; border: 1px solid #ddd; border-radius: 10px; font-family: Arial, sans-serif;">
+      <h2 style="text-align: center; color: #333;">Email Verification</h2>
+      <p style="font-size: 16px; color: #555;">
+        Hello, ${user.name}<br/><br/>
+        Your One-Time Password (OTP) for email verification is:
+      </p>
+      <div style="font-size: 28px; font-weight: bold; color: #007BFF; text-align: center; margin: 20px 0;">
+        ${otp}
+      </div>
+      <p style="font-size: 14px; color: #888;">
+        This OTP is valid for the next 10 minutes. Please do not share it with anyone.
+      </p>
+      <p style="font-size: 14px; color: #aaa; margin-top: 30px;">
+        – The TechTrendz Team
+      </p>
+    </div>`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    throw new APIError(500, "Failed to send OTP email");
+  }
+  return res
+    .status(200)
+    .json(new APIResponse(200, { email }, "OTP resent successfully"));
 });
 
 const verify_user = asyncHandler(async (req, res) => {
@@ -541,6 +589,7 @@ const deleteAddress = asyncHandler(async (req, res) => {
 
 module.exports = {
   register_user,
+  resend_otp,
   verify_user,
   login_user,
   logout_user,
