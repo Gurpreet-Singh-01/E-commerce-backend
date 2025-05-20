@@ -4,8 +4,8 @@ const restrictToAdmin = require('../middlewares/restrictToAdmin.middleware')
 
 const router = require('express').Router()
 
-router.use(verifyJWT)
 router.get('/', getAllCategories)
+router.use(verifyJWT)
 router.use(restrictToAdmin)
 router.post('/', addCategory)
 router.patch('/:id', updateCategory)

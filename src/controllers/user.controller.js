@@ -22,6 +22,7 @@ const generateAccessTokenAndRefreshToken = async (userId) => {
   }
 };
 
+
 const register_user = asyncHandler(async (req, res) => {
   const { name, email, password, gender, phone } = req.body;
 
@@ -73,7 +74,7 @@ const register_user = asyncHandler(async (req, res) => {
     </div>`,
   };
 
-    try {
+  try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
     await User.deleteOne({ _id: createdUser._id });
@@ -326,7 +327,11 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   const incomingRefreshToken =
     req.cookies.refreshToken || req.body.refreshToken;
 
-  if (!incomingRefreshToken) throw new APIError(401, "Unauthorized Token");
+  if (!incomingRefreshToken) {
+    res.clearCookie("accessToken", COOKIE_OPTIONS);
+    res.clearCookie("refreshToken", COOKIE_OPTIONS);
+    throw new APIError(401, "Unauthorized: No refresh token provided");
+  }
 
   try {
     const decodedToken = JWT.verify(
@@ -334,13 +339,25 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       process.env.REFRESH_TOKEN_SECRET_KEY
     );
 
-    if (!decodedToken) throw new APIError(401, "Unauthorized Access");
+    if (!decodedToken) {
+      res.clearCookie("accessToken", COOKIE_OPTIONS);
+      res.clearCookie("refreshToken", COOKIE_OPTIONS);
+      throw new APIError(401, "Unauthorized: Invalid token");
+    }
+
     const user = await User.findById(decodedToken?._id);
 
-    if (!user) throw new APIError(401, "Invalid Token");
+    if (!user) {
+      res.clearCookie("accessToken", COOKIE_OPTIONS);
+      res.clearCookie("refreshToken", COOKIE_OPTIONS);
+      throw new APIError(401, "Unauthorized: User not found");
+    }
 
-    if (incomingRefreshToken !== user.refreshToken)
-      throw new APIError(400, "Refresh Token is expired or used");
+    if (incomingRefreshToken !== user.refreshToken) {
+      res.clearCookie("accessToken", COOKIE_OPTIONS);
+      res.clearCookie("refreshToken", COOKIE_OPTIONS);
+      throw new APIError(401, "Unauthorized: Refresh token is invalid or used");
+    }
 
     const { accessToken, refreshToken: newRefreshToken } =
       await generateAccessTokenAndRefreshToken(user._id);
@@ -371,6 +388,8 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         )
       );
   } catch (error) {
+    res.clearCookie("accessToken", COOKIE_OPTIONS);
+    res.clearCookie("refreshToken", COOKIE_OPTIONS);
     if (error.name === "TokenExpiredError") {
       throw new APIError(401, "Refresh token expired");
     }

@@ -139,16 +139,14 @@ const getProducts = asyncHandler(async (req, res) => {
   }
 
   // search Filter
+
   let products;
   if (search) {
     const searchTerm = search.trim();
     if (searchTerm) {
-      query.$text = { $search: searchTerm };
-      products = await Product.find(query)
-        .populate("category", "name")
-        .sort({
-          score: { $meta: "textScore" },
-        });
+      // Use $regex to match substrings in the name field, case-insensitive
+      query.name = { $regex: searchTerm, $options: 'i' };
+      products = await Product.find(query).populate("category", "name");
     } else {
       products = await Product.find(query).populate("category", "name");
     }
