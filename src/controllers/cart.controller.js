@@ -80,7 +80,7 @@ const updateCartItem = asyncHandler(async (req, res) => {
   if (!product) throw new APIError(404, "Product not found");
 
   if (product.stock < qty)
-    throw new APIError(400, `Only ${product.stock} is available`);
+    throw new APIError(400, `Only ${product.stock} is available in stock`);
 
   const cart = await Cart.findOne({ user: userId });
 
