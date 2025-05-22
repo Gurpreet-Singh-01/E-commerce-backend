@@ -13,6 +13,9 @@ const addProduct = asyncHandler(async (req, res) => {
   const { name, description, price, category, stock } = req.body;
   const file = req.file;
 
+  console.log('req.body', req.body)
+  console.log('req.file', req.file)
+
   const parsedPrice = Number(price);
   const parsedStock = Number(stock);
 

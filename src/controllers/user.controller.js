@@ -24,6 +24,7 @@ const generateAccessTokenAndRefreshToken = async (userId) => {
 
 
 const register_user = asyncHandler(async (req, res) => {
+  console.log("req.body:", req.body);
   const { name, email, password, gender, phone } = req.body;
 
   if (
@@ -88,7 +89,8 @@ const register_user = asyncHandler(async (req, res) => {
 
 const resend_otp = asyncHandler(async (req, res) => {
   const { email } = req.body;
-
+  
+  console.log('req.body', req.body)
   if (!email) throw new APIError(400, "Email is required");
 
   const user = await User.findOne({ email });
@@ -129,7 +131,8 @@ const resend_otp = asyncHandler(async (req, res) => {
 });
 
 const verify_user = asyncHandler(async (req, res) => {
-  const { email, otp } = req.body;
+  console.log('req.body:',req.body)
+  const { email, otp } = req.body;  
   const existingUser = await User.findOne({ email });
 
   if (!existingUser) throw new APIError(404, "User does not exist");
@@ -239,9 +242,9 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     throw new APIError(400, "Password fields are missing");
 
   const user = await User.findById(req.user?._id);
-  if (!user) throw new APIError(401, "Invalid Access Token");
+  if (!user) throw new APIError(403, "Invalid Access Token");
   const isMatched = await user.isPasswordCorrect(oldPassword);
-  if (!isMatched) throw new APIError(401, "Incorrect Password");
+  if (!isMatched) throw new APIError(403, "Incorrect Password");
 
   const isSame = await user.isPasswordCorrect(newPassword);
   if (isSame) throw new APIError(400, "New password cannot be same as old");
@@ -398,12 +401,11 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 });
 
 const updateUserProfile = asyncHandler(async (req, res) => {
-  const { name, phone, gender } = req.body;
+  const { name, phone } = req.body;
   const user = await User.findById(req.user?._id);
   if (!user) throw new APIError(401, "Invalid Access token");
 
   if (name) user.name = name;
-  if (gender) user.gender = gender;
   if (phone) user.phone = phone;
   await user.save();
   const updatedUser = await User.findById(user._id).select(
