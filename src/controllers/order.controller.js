@@ -4,13 +4,19 @@ const User = require("../models/user.model");
 const APIError = require("../utils/API_utilities/APIError");
 const APIResponse = require("../utils/API_utilities/APIResponse");
 const asyncHandler = require("../utils/API_utilities/asyncHandler");
-const mongoose = require('mongoose')
+const mongoose = require("mongoose");
+const Razorpay = require("razorpay");
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+
 const generateOrderNumber = () => {
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const random = Math.random().toString(36).substring(2, 8).toUpperCase();
   return `ORD-${date}-${random}`;
 };
-
 
 const createOrder = asyncHandler(async (req, res) => {
   const userId = req.user._id;
@@ -21,7 +27,6 @@ const createOrder = asyncHandler(async (req, res) => {
   if (!validPaymentMethods.includes(selectedPaymentMethod))
     throw new APIError(400, "Invalid Payment Method");
 
-  
   let finalAddress;
   if (addressId) {
     const user = await User.findById(userId, "address");
@@ -81,7 +86,6 @@ const createOrder = asyncHandler(async (req, res) => {
     };
   }
 
-  
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
@@ -114,6 +118,16 @@ const createOrder = asyncHandler(async (req, res) => {
       });
     }
 
+    let razorpayOrderId = null;
+    if (selectedPaymentMethod === "online") {
+      const razorpayOrder = await razorpay.orders.create({
+        amount: totalAmount * 100, // INR to paise
+        currency: "INR",
+        receipt: generateOrderNumber(),
+      });
+      razorpayOrderId = razorpayOrder.id;
+    }
+
     const order = await Order.create(
       [
         {
@@ -124,7 +138,7 @@ const createOrder = asyncHandler(async (req, res) => {
           shippingAddress: finalAddress,
           payment: {
             method: selectedPaymentMethod,
-            transactionId: selectedPaymentMethod === "cod" ? null : "pending",
+            transactionId: razorpayOrderId || null,
             status: "pending",
           },
         },
@@ -147,6 +161,44 @@ const createOrder = asyncHandler(async (req, res) => {
   } finally {
     session.endSession();
   }
+});
+
+const verifyPayment = asyncHandler(async (req, res) => {
+  const {
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature,
+    orderId,
+  } = req.body;
+
+  const sign = `${razorpay_order_id}|${razorpay_payment_id}`;
+  const expectedSignature = crypto
+    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+    .update(sign)
+    .digest("hex");
+
+  if (expectedSignature !== razorpay_signature) {
+    throw new APIError(400, "Invalid payment signature");
+  }
+
+  const order = await Order.findById(orderId);
+  if (!order) {
+    throw new APIError(404, "Order not found");
+  }
+
+  order.payment.transactionId = razorpay_payment_id;
+  order.payment.status = "pending";
+  await order.save();
+
+  return res
+    .status(200)
+    .json(
+      new APIResponse(
+        200,
+        { status: "success" },
+        "Payment verified successfully"
+      )
+    );
 });
 
 const getUsersOrder = asyncHandler(async (req, res) => {
@@ -183,8 +235,6 @@ const getOrderbyId = asyncHandler(async (req, res) => {
     .json(new APIResponse(200, order, "Order fetched successfully"));
 });
 
-
-
 // Admin only
 
 const getAllOrders = asyncHandler(async (req, res) => {
@@ -207,16 +257,14 @@ const getAllOrders = asyncHandler(async (req, res) => {
     query["payment.method"] = method;
   }
   const orders = await Order.find(query)
-    .populate(
-      {
-        path:"items.product",
-        select:"name category image stock price",
-        populate:{
-          path:"category",
-          select:"name"
-        }
-      }
-    )
+    .populate({
+      path: "items.product",
+      select: "name category image stock price",
+      populate: {
+        path: "category",
+        select: "name",
+      },
+    })
     .populate("user", "name email");
 
   res
@@ -273,4 +321,5 @@ module.exports = {
   getAllOrders,
   updateOrderStatus,
   cancelOrder,
+  verifyPayment
 };
