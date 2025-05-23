@@ -117,7 +117,8 @@ const createOrder = asyncHandler(async (req, res) => {
         price: item.product.price,
       });
     }
-
+    const shippingCharges = 5;
+    totalAmount += shippingCharges;
     let razorpayOrderId = null;
     if (selectedPaymentMethod === "online") {
       const razorpayOrder = await razorpay.orders.create({
@@ -163,22 +164,12 @@ const createOrder = asyncHandler(async (req, res) => {
   }
 });
 
-const verifyPayment = asyncHandler(async (req, res) => {
-  const {
-    razorpay_order_id,
-    razorpay_payment_id,
-    razorpay_signature,
-    orderId,
-  } = req.body;
+const updateOrder = asyncHandler(async (req, res) => {
+  const { orderId, payment } = req.body;
+  console.log('Update Order Request:', { orderId, payment });
 
-  const sign = `${razorpay_order_id}|${razorpay_payment_id}`;
-  const expectedSignature = crypto
-    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-    .update(sign)
-    .digest("hex");
-
-  if (expectedSignature !== razorpay_signature) {
-    throw new APIError(400, "Invalid payment signature");
+  if (!orderId || !payment || !payment.transactionId) {
+    throw new APIError(400, "Missing order or payment details");
   }
 
   const order = await Order.findById(orderId);
@@ -186,19 +177,17 @@ const verifyPayment = asyncHandler(async (req, res) => {
     throw new APIError(404, "Order not found");
   }
 
-  order.payment.transactionId = razorpay_payment_id;
-  order.payment.status = "pending";
+  if (order.payment.method !== 'online') {
+    throw new APIError(400, "Cannot update payment for non-online order");
+  }
+
+  order.payment.transactionId = payment.transactionId;
   await order.save();
 
-  return res
-    .status(200)
-    .json(
-      new APIResponse(
-        200,
-        { status: "success" },
-        "Payment verified successfully"
-      )
-    );
+  await order.populate("items.product", "name price image category stock");
+  return res.status(200).json(
+    new APIResponse(200, order, "Order updated successfully")
+  );
 });
 
 const getUsersOrder = asyncHandler(async (req, res) => {
@@ -234,8 +223,6 @@ const getOrderbyId = asyncHandler(async (req, res) => {
     .status(200)
     .json(new APIResponse(200, order, "Order fetched successfully"));
 });
-
-// Admin only
 
 const getAllOrders = asyncHandler(async (req, res) => {
   const { status, method } = req.query;
@@ -316,10 +303,10 @@ const cancelOrder = asyncHandler(async (req, res) => {
 
 module.exports = {
   createOrder,
+  updateOrder,
   getUsersOrder,
   getOrderbyId,
   getAllOrders,
   updateOrderStatus,
   cancelOrder,
-  verifyPayment
 };
