@@ -22,7 +22,6 @@ const generateAccessTokenAndRefreshToken = async (userId) => {
   }
 };
 
-
 const register_user = asyncHandler(async (req, res) => {
   console.log("req.body:", req.body);
   const { name, email, password, gender, phone } = req.body;
@@ -89,8 +88,8 @@ const register_user = asyncHandler(async (req, res) => {
 
 const resend_otp = asyncHandler(async (req, res) => {
   const { email } = req.body;
-  
-  console.log('req.body', req.body)
+
+  console.log("req.body", req.body);
   if (!email) throw new APIError(400, "Email is required");
 
   const user = await User.findOne({ email });
@@ -131,8 +130,8 @@ const resend_otp = asyncHandler(async (req, res) => {
 });
 
 const verify_user = asyncHandler(async (req, res) => {
-  console.log('req.body:',req.body)
-  const { email, otp } = req.body;  
+  console.log("req.body:", req.body);
+  const { email, otp } = req.body;
   const existingUser = await User.findOne({ email });
 
   if (!existingUser) throw new APIError(404, "User does not exist");
@@ -356,12 +355,20 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       throw new APIError(401, "Unauthorized: User not found");
     }
 
-    if (incomingRefreshToken !== user.refreshToken) {
+    // if (incomingRefreshToken !== user.refreshToken) {
+    //   res.clearCookie("accessToken", COOKIE_OPTIONS);
+    //   res.clearCookie("refreshToken", COOKIE_OPTIONS);
+    //   throw new APIError(401, "Unauthorized: Refresh token is invalid or used");
+    // }
+    if (!user.refreshToken || incomingRefreshToken !== user.refreshToken) {
       res.clearCookie("accessToken", COOKIE_OPTIONS);
       res.clearCookie("refreshToken", COOKIE_OPTIONS);
-      throw new APIError(401, "Unauthorized: Refresh token is invalid or used");
+      throw new APIError(
+        401,
+        "Unauthorized: Refresh token is invalid or not set"
+      );
     }
-
+    
     const { accessToken, refreshToken: newRefreshToken } =
       await generateAccessTokenAndRefreshToken(user._id);
 
