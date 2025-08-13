@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const User = require('../models/user.model');
+const User = require('../models/User.model');
 
 const cleanupUnverifiedUsers = () => {
   cron.schedule('0 0 * * *', async () => { 
