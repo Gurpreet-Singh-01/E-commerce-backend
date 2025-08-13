@@ -2,7 +2,7 @@ require("dotenv").config({
   path: "./.env",
 });
 const mongoose = require("mongoose");
-const User = require("../src/models/user.model");
+const User = require("../src/models/User.model");
 const { DB_NAME } = require("../src/constants");
 
 const seedAdmin = async () => {

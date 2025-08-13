@@ -2,7 +2,7 @@ require("dotenv").config({
   path: "./.env",
 });
 const JWT = require("jsonwebtoken");
-const User = require("../models/user.model");
+const User = require("../models/User.model");
 const APIError = require("../utils/API_utilities/APIError");
 const asyncHandler = require("../utils/API_utilities/asyncHandler");
 
