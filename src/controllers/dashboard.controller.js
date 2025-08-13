@@ -1,6 +1,6 @@
 const Order = require("../models/Order.model");
 const Product = require("../models/Product.model");
-const User = require("../models/user.model");
+const User = require("../models/User.model");
 const APIError = require("../utils/API_utilities/APIError");
 const APIResponse = require("../utils/API_utilities/APIResponse");
 const asyncHandler = require("../utils/API_utilities/asyncHandler");
