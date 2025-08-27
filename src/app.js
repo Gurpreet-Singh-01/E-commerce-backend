@@ -32,6 +32,9 @@ app.use("/api/v1/category", categoryRouter);
 app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/order", orderRouter);
 app.use("/api/v1/admin", adminRouter);
+app.get("/api/v1/ping", (req,res) =>{
+  res.status(200).json({message:"pong"})
+})
 app.use(errorMiddleware);
 cleanupUnverifiedUsers()
 module.exports = { app };
