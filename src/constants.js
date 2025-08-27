@@ -2,6 +2,6 @@ const DB_NAME = "ECommerce"
 const COOKIE_OPTIONS = {
     httpOnly: true,
     secure: true,
-    sameSite: 'lax'
+    sameSite: 'none'
 }
 module.exports = {DB_NAME, COOKIE_OPTIONS}
